@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: taskapp_user
+      POSTGRES_DB: taskapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - taskapp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskapp_user -d taskapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: taskapp
+      DATABASE_USER: taskapp_user
+      DATABASE_PASSWORD: ${DB_PASSWORD} 
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}  # default for dev
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - taskapp-network
+
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api}
+    networks:
+      - taskapp-network
+
+networks:
+  taskapp-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

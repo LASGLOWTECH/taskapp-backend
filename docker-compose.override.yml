@@ -1,0 +1,19 @@
+services:
+  db:
+    ports:
+      - "5432:5432"  # Expose DB to host for debugging with psql or GUI
+
+  backend:
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app  # Mount source code for hot reload
+    environment:
+      FLASK_ENV: development
+      DEBUG: 1
+    command: flask run --host=0.0.0.0 --reload
+
+  frontend:
+    ports:
+      - "8080:80"
+    # Optionally mount built files if you build on host, but usually not needed
