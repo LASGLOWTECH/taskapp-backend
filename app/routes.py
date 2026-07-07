@@ -1,8 +1,10 @@
+from datetime import datetime
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models import Task, User
 from app.auth import token_required, login_user, generate_token
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import text
 
 api_bp = Blueprint('api', __name__)
 
@@ -129,3 +131,21 @@ def signup():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/health', methods=['GET'])
+def health_check():
+    try:
+        # Check database connection
+        db.session.execute(text('SELECT 1'))
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': str(datetime.utcnow())
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': str(datetime.utcnow())
+        }), 503

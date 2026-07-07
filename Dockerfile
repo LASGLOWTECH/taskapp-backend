@@ -1,16 +1,13 @@
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV FLASK_ENV=production
+ENV FLASK_DEBUG=0
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    netcat-openbsd \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential netcat-openbsd gcc libpq-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -26,4 +23,4 @@ USER appuser
 
 EXPOSE 5000
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ['./docker-entrypoint.sh']

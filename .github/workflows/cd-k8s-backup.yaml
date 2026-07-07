@@ -1,0 +1,73 @@
+name: Deploy 
+
+on:
+  workflow_run:
+    workflows: ["Backend CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          scp -i ~/.ssh/deploy_key backend.tar.gz \
+            ubuntu@${{ secrets.EC2_HOST }}:/tmp/
+
+          ssh -i ~/.ssh/deploy_key ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+
+            cd /opt/taskapp/backend
+
+            # Backup
+            sudo cp -r . ../backup.$(date +%s) || true
+
+            # Extract new code
+            sudo -u taskapp tar -xzf /tmp/backend.tar.gz
+
+            # Install deps
+            sudo -u taskapp venv/bin/pip install -r requirements.txt
+
+            # Run migrations (KEY STEP FOR TEACHING)
+            sudo -u taskapp \
+              DATABASE_HOST="${{ secrets.DATABASE_HOST }}" \
+              DATABASE_PORT="${{ secrets.DATABASE_PORT }}" \
+              DATABASE_NAME="${{ secrets.DATABASE_NAME }}" \
+              DATABASE_USER="${{ secrets.DATABASE_USER }}" \
+              DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}" \
+              venv/bin/alembic upgrade head
+
+            # Restart
+            sudo systemctl restart taskapp-backend
+
+            # Health check
+            sleep 3
+            curl -f http://localhost:5000/api/health
+          EOF
+
+
+
+
+
+
+
+
+
