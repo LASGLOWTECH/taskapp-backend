@@ -56,4 +56,4 @@ jobs:
 
       - name: Run database migrations
         run: |
-          kubectl exec deploy/taskapp-backend -n taskapp -- alembic upgrade head --insecure-skip-tls-verify
+          kubectl exec deploy/taskapp-backend -n taskapp --insecure-skip-tls-verify -- alembic upgrade head
