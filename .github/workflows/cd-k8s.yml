@@ -9,6 +9,8 @@ on:
       - 'requirements.txt'
       - 'alembic.ini'
       - 'run.py'
+      - '.github/workflows/cd-k8s.yml'   
+  workflow_dispatch: 
 
 env:
   REGISTRY: ghcr.io
